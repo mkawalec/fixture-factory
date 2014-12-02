@@ -6,10 +6,10 @@ var _ = require('lodash');
 function FixtureFactory () {
   this.dataModels = {};
   this.createdModels = {};
-}  
+}
 
 var instance;
-   
+
 var _getFieldModel = function (method) {
   return !_.isFunction(method) && _.isObject(method) ? method : { method: method };
 };
@@ -46,7 +46,9 @@ var _handleString = function (model) {
 var _generateField = function (key, method, fixture, dataModel, generatedFixtures) {
 
   var model = _getFieldModel(method);
-  var field;
+  if (model.nest) {
+    return model.nest;
+  }
 
   if (model.reference) {
     var modelName = model.reference.split('.')[0];
@@ -60,6 +62,8 @@ var _generateField = function (key, method, fixture, dataModel, generatedFixture
     var index = _.random(0, possibleValues.length - 1);
     return possibleValues[index];
   }
+
+  var field;
 
   switch (typeof model.method) {
     case 'function':
@@ -76,7 +80,7 @@ var _generateField = function (key, method, fixture, dataModel, generatedFixture
 
   // If the current field is unique, make sure
   // that it is not duplicated
-  if (model.options && model.options._unique === true) {
+  if (model.unique === true) {
 
     // Check if current value exists in fixtures generated thus far
     if (_.some(_.pluck(generatedFixtures, key), function (existingValue) {
@@ -84,7 +88,7 @@ var _generateField = function (key, method, fixture, dataModel, generatedFixture
     })) {
       return _generateField.apply(null, arguments);
     }
-  }    
+  }
 
   return field;
 };
@@ -98,7 +102,7 @@ var _generateFixture = function (context, properties, generatedFixtures) {
 
   var collection = _.extend({}, dataModel, properties);
 
-  // The ability to make multiple fields unique together 
+  // The ability to make multiple fields unique together
   // (think combined primary keys)
   var uniqueFields;
   if (collection._unique != null) {
@@ -147,10 +151,10 @@ FixtureFactory.prototype = {
     var self = this;
     return {
       generate: function () {
-        self.generate.apply(self, _.union([ key ], arguments));
+        self.generate.apply(self, _.union([key], arguments));
       },
       generateOne: function () {
-        self.generateOne.apply(self, _.union([ key ], arguments));
+        self.generateOne.apply(self, _.union([key], arguments));
       }
     };
   },
@@ -215,7 +219,6 @@ FixtureFactory.prototype = {
 
     return fixtures;
   }
-
 };
 
 instance = new FixtureFactory();
